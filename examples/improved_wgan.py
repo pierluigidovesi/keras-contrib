@@ -19,6 +19,7 @@ The model saves images using pillow. If you don't have pillow, either install it
 import argparse
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from keras.models import Model, Sequential
@@ -32,6 +33,7 @@ from keras.datasets import mnist
 from keras import backend as K
 from functools import partial
 
+
 try:
     from PIL import Image
 except ImportError:
@@ -41,6 +43,7 @@ except ImportError:
 BATCH_SIZE              = 64
 TRAINING_RATIO          = 5  # The training ratio is the number of discriminator updates per generator update. The paper uses 5.
 GRADIENT_PENALTY_WEIGHT = 10  # As per the paper
+num_epochs              = 1
 
 
 def wasserstein_loss(y_true, y_pred):
@@ -323,12 +326,14 @@ positive_y = np.ones((BATCH_SIZE, 1), dtype=np.float32)
 negative_y = -positive_y
 dummy_y = np.zeros((BATCH_SIZE, 1), dtype=np.float32)
 
-for epoch in range(50):
+discriminator_loss = []
+generator_loss     = []
+
+for epoch in range(num_epochs):
     np.random.shuffle(X_train)
     print("Epoch: ", epoch)
     print("Number of batches: ", int(X_train.shape[0] // BATCH_SIZE))
-    discriminator_loss = []
-    generator_loss = []
+
     minibatches_size = BATCH_SIZE * TRAINING_RATIO
 
     """
@@ -337,7 +342,7 @@ for epoch in range(50):
     GRADIENT_PENALTY_WEIGHT = 10
     """
 
-    for i in range(int(X_train.shape[0] // (BATCH_SIZE * TRAINING_RATIO))):
+    for i in tqdm(range(int(X_train.shape[0] // (BATCH_SIZE * TRAINING_RATIO)))):
         discriminator_minibatches = X_train[i * minibatches_size:(i + 1) * minibatches_size]
         for j in range(TRAINING_RATIO):
             image_batch = discriminator_minibatches[j * BATCH_SIZE:(j + 1) * BATCH_SIZE]
@@ -347,6 +352,19 @@ for epoch in range(50):
                                                                          [positive_y, negative_y, dummy_y]))
         generator_loss.append(generator_model.train_on_batch(np.random.rand(BATCH_SIZE, 100), positive_y))
     # Still needs some code to display losses from the generator and discriminator, progress bars, etc.
-
-    # print
     generate_images(generator, args.output_dir, epoch)
+
+# SAVE & PRINT LOSSES
+gen_line  = plt.plot(generator_loss, label = "Generator Loss")
+disc_line = plt.plot(discriminator_loss, label = "Discriminator Loss")
+plt.legend([gen_line, disc_line], ["Generator Loss", "Discriminator Loss"])
+plt.show()
+plt.savefig("all_losses.png")
+
+loss_file = open('gen_loss.txt', 'w')
+for item in generator_loss:
+    loss_file.write("%s\n" % item)
+
+loss_file = open('disc_loss.txt', 'w')
+for item in discriminator_loss:
+    loss_file.write("%s\n" % item)
