@@ -245,9 +245,9 @@ parser.add_argument("--output_dir", "-o", required=True, help="Directory to outp
 
 args = parser.parse_args()
 
-dense_gen = False
-dense_disc = False
-num_epochs = 1
+dense_gen = True
+dense_disc = True
+num_epochs = 200
 
 
 # First we load the image data, reshape it and normalize it to the range [-1, 1]
