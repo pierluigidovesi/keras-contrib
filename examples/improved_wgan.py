@@ -96,13 +96,13 @@ def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_wei
     return K.mean(gradient_penalty)
 
 
-def make_generator(less_dense = False):
+def make_generator(dense = True):
     """Creates a generator model that takes a 100-dimensional noise vector as a "seed", and outputs images
     of size 28x28x1."""
     model = Sequential()
 
     # ------------------------------ Layer 1: Dense + LeakyReLu ---------------------------------------
-    if less_dense:
+    if dense:
         model.add(Dense(1024, input_dim=100))
         model.add(LeakyReLU())
 
@@ -155,7 +155,7 @@ def make_generator(less_dense = False):
     return model
 
 
-def make_discriminator(less_dense = False):
+def make_discriminator(dense = True):
     """Creates a discriminator model that takes an image as input and outputs a single value, representing whether
     the input is real or generated. Unlike normal GANs, the output is not sigmoid and does not represent a probability!
     Instead, the output should be as large and negative as possible for generated inputs and as large and positive
@@ -183,7 +183,7 @@ def make_discriminator(less_dense = False):
     model.add(Flatten())
 
     # ------------------------------ Layer 4: Dense + LeakyReLu ---------------------------------------
-    if less_dense:
+    if dense:
         model.add(Dense(1024, kernel_initializer='he_normal'))
         model.add(LeakyReLU())
 
@@ -239,14 +239,12 @@ def generate_images(generator_model, output_dir, epoch):
 
 parser = argparse.ArgumentParser(description="Improved Wasserstein GAN implementation for Keras.")
 parser.add_argument("--output_dir", "-o", required=True, help="Directory to output generated files to")
-parser.add_argument("--n_epochs",   "-e", required=True, help="Number of epochs")
-parser.add_argument("--denseness_gen",   "-g", required=True, help="Denseness of generator")
-parser.add_argument("--denseness_disc",   "-d", required=True, help="Denseness of discriminator")
+
 args = parser.parse_args()
 
-less_dense_gen = int(args.denseness_gen)
-less_dense_disc = int(args.denseness_disc)
-num_epochs = int(args.n_epochs)
+dense_gen = False
+dense_disc = False
+num_epochs = 200
 
 
 # First we load the image data, reshape it and normalize it to the range [-1, 1]
@@ -261,8 +259,8 @@ else:
 X_train = (X_train.astype(np.float32) - 127.5) / 127.5
 
 # Now we initialize the generator and discriminator.
-generator = make_generator(less_dense = less_dense_gen)
-discriminator = make_discriminator(less_dense = less_dense_disc)
+generator = make_generator(dense = dense_gen)
+discriminator = make_discriminator(dense = dense_disc)
 
 # The generator_model is used when we want to train the generator layers.
 # As such, we ensure that the discriminator layers are not trainable.
