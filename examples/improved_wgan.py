@@ -357,6 +357,7 @@ for epoch in range(num_epochs):
     generate_images(generator, args.output_dir, epoch)
 
 # SAVE & PRINT LOSSES
+discriminator_loss = np.asarray(discriminator_loss)
 gen_line  = plt.plot(generator_loss, label = "Generator Loss")
 disc_line = plt.plot(discriminator_loss[:,0], label = "Discriminator Loss")
 plt.legend([gen_line, disc_line], ["Generator Loss", "Discriminator Loss"])
