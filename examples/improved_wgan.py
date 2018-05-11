@@ -351,8 +351,8 @@ for epoch in range(num_epochs):
             noise = np.random.rand(BATCH_SIZE, 100).astype(np.float32)
             disc_loss_j.append(discriminator_model.train_on_batch([image_batch, noise],
                                                                   [positive_y, negative_y, dummy_y]))
-            print(discriminator_model.metrics_names())
-            print(discriminator_model.metrics())
+            print(discriminator_model.metrics_names)
+            print(discriminator_model.metrics)
         discriminator_loss.append(np.mean(disc_loss_j, axis=0))
         generator_loss.append(generator_model.train_on_batch(np.random.rand(BATCH_SIZE, 100), positive_y))
     # Still needs some code to display losses from the generator and discriminator, progress bars, etc.
