@@ -349,10 +349,8 @@ for epoch in range(num_epochs):
             image_batch = discriminator_minibatches[j * BATCH_SIZE:(j + 1) * BATCH_SIZE]
             # the noise is the generator input
             noise = np.random.rand(BATCH_SIZE, 100).astype(np.float32)
-            disc_loss_j.append(discriminator_model.train_on_batch([image_batch, noise],
-                                                                  [positive_y, negative_y, dummy_y]))
-            print(discriminator_model.metrics_names)
-            print(discriminator_model.metrics)
+            disc_loss_j.append(np.asarray(discriminator_model.train_on_batch([image_batch, noise],
+                                                                             [positive_y, negative_y, dummy_y])))
         discriminator_loss.append(np.mean(disc_loss_j, axis=0))
         generator_loss.append(generator_model.train_on_batch(np.random.rand(BATCH_SIZE, 100), positive_y))
     # Still needs some code to display losses from the generator and discriminator, progress bars, etc.
@@ -360,12 +358,16 @@ for epoch in range(num_epochs):
 
 # SAVE & PRINT LOSSES
 gen_line  = plt.plot(generator_loss, label = "Generator Loss")
-disc_line = plt.plot(discriminator_loss, label = "Discriminator Loss")
+disc_line = plt.plot(discriminator_loss[:,0], label = "Discriminator Loss")
 plt.legend([gen_line, disc_line], ["Generator Loss", "Discriminator Loss"])
 plt.savefig("all_losses.png")
 
 loss_file = open('gen_loss.txt', 'w')
 for item in generator_loss:
+    loss_file.write("%s\n" % item)
+
+loss_file = open('disc_loss.txt', 'w')
+for item in discriminator_loss:
     loss_file.write("%s\n" % item)
 
 loss_file = open('disc_loss.txt', 'w')
