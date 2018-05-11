@@ -344,16 +344,16 @@ for epoch in range(num_epochs):
 
     for i in tqdm(range(int(X_train.shape[0] // (BATCH_SIZE * TRAINING_RATIO)))):
         discriminator_minibatches = X_train[i * minibatches_size:(i + 1) * minibatches_size]
-        disc_loss_j = 0
+        disc_loss_j = []
         for j in range(TRAINING_RATIO):
             image_batch = discriminator_minibatches[j * BATCH_SIZE:(j + 1) * BATCH_SIZE]
             # the noise is the generator input
             noise = np.random.rand(BATCH_SIZE, 100).astype(np.float32)
-            disc_loss_j += discriminator_model.train_on_batch([image_batch, noise],
-                                                              [positive_y, negative_y, dummy_y])
-            discriminator_model.metrics_names()
-            discriminator_model.metrics()
-        discriminator_loss.append(disc_loss_j/TRAINING_RATIO)
+            disc_loss_j.append(discriminator_model.train_on_batch([image_batch, noise],
+                                                                  [positive_y, negative_y, dummy_y]))
+            print(discriminator_model.metrics_names())
+            print(discriminator_model.metrics())
+        discriminator_loss.append(np.mean(disc_loss_j, axis=0))
         generator_loss.append(generator_model.train_on_batch(np.random.rand(BATCH_SIZE, 100), positive_y))
     # Still needs some code to display losses from the generator and discriminator, progress bars, etc.
     generate_images(generator, args.output_dir, epoch)
