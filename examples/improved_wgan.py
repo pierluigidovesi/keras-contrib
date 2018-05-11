@@ -15,9 +15,12 @@ tested this with Theano at all.
 
 The model saves images using pillow. If you don't have pillow, either install it or remove the calls to generate_images.
 """
+
 import argparse
 import os
 import numpy as np
+
+from tqdm import tqdm
 from keras.models import Model, Sequential
 from keras.layers import Input, Dense, Reshape, Flatten
 from keras.layers.merge import _Merge
@@ -320,7 +323,7 @@ positive_y = np.ones((BATCH_SIZE, 1), dtype=np.float32)
 negative_y = -positive_y
 dummy_y = np.zeros((BATCH_SIZE, 1), dtype=np.float32)
 
-for epoch in range(100):
+for epoch in tqdm(range(100)):
     np.random.shuffle(X_train)
     print("Epoch: ", epoch)
     print("Number of batches: ", int(X_train.shape[0] // BATCH_SIZE))
