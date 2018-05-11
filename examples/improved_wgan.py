@@ -105,9 +105,12 @@ def make_generator(dense = True):
     if dense:
         model.add(Dense(1024, input_dim=100))
         model.add(LeakyReLU())
+        model.add(Dense(128 * 7 * 7))
+    else:
+        model.add(Dense(128 * 7 * 7, input_dim = 100))
 
     # ------------------------------ Layer 2: Dense + LeakyReLu ---------------------------------------
-    model.add(Dense(128 * 7 * 7))
+
     model.add(BatchNormalization())
     model.add(LeakyReLU())
 
@@ -244,7 +247,7 @@ args = parser.parse_args()
 
 dense_gen = False
 dense_disc = False
-num_epochs = 200
+num_epochs = 1
 
 
 # First we load the image data, reshape it and normalize it to the range [-1, 1]
