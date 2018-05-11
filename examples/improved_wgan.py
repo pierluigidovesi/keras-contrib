@@ -35,8 +35,8 @@ except ImportError:
     print('This script depends on pillow! Please install it (e.g. with pip install pillow)')
     exit()
 
-BATCH_SIZE = 64
-TRAINING_RATIO = 5  # The training ratio is the number of discriminator updates per generator update. The paper uses 5.
+BATCH_SIZE              = 64
+TRAINING_RATIO          = 5  # The training ratio is the number of discriminator updates per generator update. The paper uses 5.
 GRADIENT_PENALTY_WEIGHT = 10  # As per the paper
 
 
@@ -66,7 +66,7 @@ def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_wei
 
     In order to evaluate the gradients, we must first run samples through the generator and evaluate the loss.
     Then we get the gradients of the discriminator w.r.t. the input averaged samples.
-    The l2 norm and penalty can then be calculated for this gradient.
+    The L2 norm and penalty can then be calculated for this gradient.
 
     Note that this loss function requires the original averaged samples as input, but Keras only supports passing
     y_true and y_pred to loss functions. To get around this, we make a partial() of the function with the
@@ -94,30 +94,57 @@ def make_generator():
     """Creates a generator model that takes a 100-dimensional noise vector as a "seed", and outputs images
     of size 28x28x1."""
     model = Sequential()
+
+    # ------------------------------ Layer 1: Dense + LeakyReLu ---------------------------------------
     model.add(Dense(1024, input_dim=100))
     model.add(LeakyReLU())
+
+    # ------------------------------ Layer 2: Dense + LeakyReLu ---------------------------------------
     model.add(Dense(128 * 7 * 7))
     model.add(BatchNormalization())
     model.add(LeakyReLU())
+
+    # - - - - - - - - - - - - - - - - - - - Reshape  - - - - - - - - - - - - - - - -
     if K.image_data_format() == 'channels_first':
+        # size: 128 x 7 x 7
         model.add(Reshape((128, 7, 7), input_shape=(128 * 7 * 7,)))
-        bn_axis = 1
+        bn_axis = 1 # first
     else:
+        # size: 7 x 7 x 128
         model.add(Reshape((7, 7, 128), input_shape=(128 * 7 * 7,)))
-        bn_axis = -1
-    model.add(Conv2DTranspose(128, (5, 5), strides=2, padding='same'))
+        bn_axis = -1 # last
+
+    # ------------------------------ Layer 3: DeConv2D + LeakyReLu ---------------------------------------
+    model.add(Conv2DTranspose(filters =128, kernel_size= (5, 5), strides=2, padding='same'))
     model.add(BatchNormalization(axis=bn_axis))
     model.add(LeakyReLU())
+
+    # ------------------------------ Layer 4: Conv2D + LeakyReLu ---------------------------------------
     model.add(Convolution2D(64, (5, 5), padding='same'))
     model.add(BatchNormalization(axis=bn_axis))
     model.add(LeakyReLU())
+
+    # ------------------------------ Layer 5: DeConv2D + LeakyReLu ---------------------------------------
     model.add(Conv2DTranspose(64, (5, 5), strides=2, padding='same'))
     model.add(BatchNormalization(axis=bn_axis))
     model.add(LeakyReLU())
+
+    # ------------------------------ Layer 6: Conv2D + Tanh ---------------------------------------
     # Because we normalized training inputs to lie in the range [-1, 1],
     # the tanh function should be used for the output of the generator to ensure its output
     # also lies in this range.
     model.add(Convolution2D(1, (5, 5), padding='same', activation='tanh'))
+
+    # our idea:
+    # seed 100
+    # layer1: dense 1024
+    # layer2: dense 7*7*128
+    # reshape 7 x 7 x 128
+    # layer3: Deconv 14 x 14 x 128
+    # layer4: Conv   14 x 14 x 64
+    # layer5: Deconv 28 x 28 x 64
+    # layer6: Conv   28 x 28 x 1
+
     return model
 
 
@@ -129,19 +156,41 @@ def make_discriminator():
 
     Note that the improved WGAN paper suggests that BatchNormalization should not be used in the discriminator."""
     model = Sequential()
+
+    # ------------------------------ Layer 1: Conv2D + LeakyReLu ---------------------------------------
     if K.image_data_format() == 'channels_first':
         model.add(Convolution2D(64, (5, 5), padding='same', input_shape=(1, 28, 28)))
     else:
         model.add(Convolution2D(64, (5, 5), padding='same', input_shape=(28, 28, 1)))
     model.add(LeakyReLU())
+
+    # ------------------------------ Layer 2: Conv2D + LeakyReLu ---------------------------------------
     model.add(Convolution2D(128, (5, 5), kernel_initializer='he_normal', strides=[2, 2]))
     model.add(LeakyReLU())
+
+    # ------------------------------ Layer 3: Conv2D + LeakyReLu ---------------------------------------
     model.add(Convolution2D(128, (5, 5), kernel_initializer='he_normal', padding='same', strides=[2, 2]))
     model.add(LeakyReLU())
+
+    # - - - - - - - - - - - - - - - - - - - Reshape  - - - - - - - - - - - - - - - -
     model.add(Flatten())
+
+    # ------------------------------ Layer 4: Dense + LeakyReLu ---------------------------------------
     model.add(Dense(1024, kernel_initializer='he_normal'))
     model.add(LeakyReLU())
+
+    # ------------------------------ Layer 5: Dense + NADA ---------------------------------------
     model.add(Dense(1, kernel_initializer='he_normal'))
+
+    # our idea:
+    # input          1 x 28 x 28
+    # layer1: conv  64 x 28 x 28
+    # layer2: conv 128 x 14 x 14
+    # layer3: conv 128 x  7 x  7
+    # flatten 7*7*128
+    # layer4: dense 1024
+    # layer5: dense 1
+
     return model
 
 
@@ -168,13 +217,17 @@ class RandomWeightedAverage(_Merge):
 def generate_images(generator_model, output_dir, epoch):
     """Feeds random seeds into the generator and tiles and saves the output to a PNG file."""
     test_image_stack = generator_model.predict(np.random.rand(10, 100))
+    # output gen: (-1,1) --> (-127.5, 127.5) --> (0, 255)
     test_image_stack = (test_image_stack * 127.5) + 127.5
+    # remove dim = 1
     test_image_stack = np.squeeze(np.round(test_image_stack).astype(np.uint8))
     tiled_output = tile_images(test_image_stack)
     tiled_output = Image.fromarray(tiled_output, mode='L')  # L specifies greyscale
     outfile = os.path.join(output_dir, 'epoch_{}.png'.format(epoch))
     tiled_output.save(outfile)
 
+
+# ----------------------------------------- MAIN ---------------------------------------------------
 
 parser = argparse.ArgumentParser(description="Improved Wasserstein GAN implementation for Keras.")
 parser.add_argument("--output_dir", "-o", required=True, help="Directory to output generated files to")
@@ -183,10 +236,12 @@ args = parser.parse_args()
 # First we load the image data, reshape it and normalize it to the range [-1, 1]
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 X_train = np.concatenate((X_train, X_test), axis=0)
+
 if K.image_data_format() == 'channels_first':
     X_train = X_train.reshape((X_train.shape[0], 1, X_train.shape[1], X_train.shape[2]))
 else:
     X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], X_train.shape[2], 1))
+# change image color in (-1,1)
 X_train = (X_train.astype(np.float32) - 127.5) / 127.5
 
 # Now we initialize the generator and discriminator.
@@ -201,6 +256,7 @@ discriminator = make_discriminator()
 for layer in discriminator.layers:
     layer.trainable = False
 discriminator.trainable = False
+
 generator_input = Input(shape=(100,))
 generator_layers = generator(generator_input)
 discriminator_layers_for_generator = discriminator(generator_layers)
@@ -271,13 +327,23 @@ for epoch in range(100):
     discriminator_loss = []
     generator_loss = []
     minibatches_size = BATCH_SIZE * TRAINING_RATIO
+
+    """
+    BATCH_SIZE              = 64
+    TRAINING_RATIO          = 5  # The training ratio is the number of discriminator updates per generator update.
+    GRADIENT_PENALTY_WEIGHT = 10
+    """
+
     for i in range(int(X_train.shape[0] // (BATCH_SIZE * TRAINING_RATIO))):
         discriminator_minibatches = X_train[i * minibatches_size:(i + 1) * minibatches_size]
         for j in range(TRAINING_RATIO):
             image_batch = discriminator_minibatches[j * BATCH_SIZE:(j + 1) * BATCH_SIZE]
+            # the noise is the generator input
             noise = np.random.rand(BATCH_SIZE, 100).astype(np.float32)
             discriminator_loss.append(discriminator_model.train_on_batch([image_batch, noise],
                                                                          [positive_y, negative_y, dummy_y]))
         generator_loss.append(generator_model.train_on_batch(np.random.rand(BATCH_SIZE, 100), positive_y))
     # Still needs some code to display losses from the generator and discriminator, progress bars, etc.
+
+    # print
     generate_images(generator, args.output_dir, epoch)
