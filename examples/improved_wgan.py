@@ -247,7 +247,7 @@ args = parser.parse_args()
 
 dense_gen = True
 dense_disc = True
-num_epochs = 200
+num_epochs = 100
 
 
 # First we load the image data, reshape it and normalize it to the range [-1, 1]
