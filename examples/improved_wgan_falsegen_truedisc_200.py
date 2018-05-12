@@ -40,10 +40,10 @@ except ImportError:
     print('This script depends on pillow! Please install it (e.g. with pip install pillow)')
     exit()
 
-BATCH_SIZE              = 64
+BATCH_SIZE              = 32
 TRAINING_RATIO          = 5  # The training ratio is the number of discriminator updates per generator update. The paper uses 5.
-GRADIENT_PENALTY_WEIGHT = 10  # As per the paper
-num_epochs              = 1
+GRADIENT_PENALTY_WEIGHT = 9  # As per the paper
+num_epochs              = 50
 
 
 def wasserstein_loss(y_true, y_pred):
@@ -103,7 +103,7 @@ def make_generator(dense = True):
 
     # ------------------------------ Layer 1: Dense + LeakyReLu ---------------------------------------
     if dense:
-        model.add(Dense(1024, input_dim=100))
+        model.add(Dense(1024, input_dim=128))
         model.add(LeakyReLU())
         model.add(Dense(128 * 7 * 7))
     else:
