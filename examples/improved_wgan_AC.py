@@ -44,8 +44,9 @@ except ImportError:
 BATCH_SIZE              = 64
 TRAINING_RATIO          = 5  # The training ratio is the number of discriminator updates per generator update. The paper uses 5.
 GRADIENT_PENALTY_WEIGHT = 10  # As per the paper
-num_epochs              = 1
-
+num_epochs              = 5
+dense_gen = True
+dense_disc = True
 
 def wasserstein_loss(y_true, y_pred):
     """Calculates the Wasserstein loss for a sample batch.
@@ -249,9 +250,6 @@ parser.add_argument("--output_dir", "-o", required=True, help="Directory to outp
 
 args = parser.parse_args()
 
-dense_gen = True
-dense_disc = True
-num_epochs = 10
 
 
 # First we load the image data, reshape it and normalize it to the range [-1, 1]
