@@ -48,6 +48,11 @@ num_epochs              = 5
 dense_gen = True
 dense_disc = True
 
+crop_lambda_truth = Lambda(lambda x: x[0])
+crop_lambda_label = Lambda(lambda x: x[1:])
+
+
+
 def wasserstein_loss(y_true, y_pred):
     """Calculates the Wasserstein loss for a sample batch.
 
@@ -281,8 +286,8 @@ generator_layers = generator(generator_input)
 discriminator_layers_for_generator = discriminator(generator_layers)
 
 generator_model = Model(inputs=[generator_input],
-                        outputs=[Lambda(discriminator_layers_for_generator[0]),
-                                 Lambda(discriminator_layers_for_generator[1:])])
+                        outputs=[crop_lambda_truth(discriminator_layers_for_generator),
+                                 crop_lambda_label(discriminator_layers_for_generator)])
 # We use the Adam paramaters from Gulrajani et al.
 generator_model.compile(optimizer=Adam(0.0001, beta_1=0.5, beta_2=0.9), loss=[wasserstein_loss,
                                                                               label_loss])
@@ -327,11 +332,11 @@ partial_gp_loss.__name__ = 'gradient_penalty'  # Functions need names or Keras w
 # If we don't concatenate the real and generated samples, however, we get three outputs: One of the generated
 # samples, one of the real samples, and one of the averaged samples, all of size BATCH_SIZE. This works neatly!
 discriminator_model = Model(inputs=[real_samples, generator_input_for_discriminator],
-                            outputs=[Lambda(discriminator_output_from_real_samples[0]),
-                                     Lambda(discriminator_output_from_generator[0]),
+                            outputs=[crop_lambda_truth(discriminator_output_from_real_samples),
+                                     crop_lambda_label(discriminator_output_from_generator),
                                      averaged_samples_out,
-                                     Lambda(discriminator_output_from_real_samples[1:]),
-                                     Lambda(discriminator_output_from_generator[1:])])
+                                     crop_lambda_label(discriminator_output_from_real_samples),
+                                     crop_lambda_label(discriminator_output_from_generator)])
 # We use the Adam paramaters from Gulrajani et al. We use the Wasserstein loss for both the real and generated
 # samples, and the gradient penalty loss for the averaged samples.
 discriminator_model.compile(optimizer=Adam(0.0001, beta_1=0.5, beta_2=0.9),
