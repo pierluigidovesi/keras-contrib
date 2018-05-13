@@ -105,7 +105,7 @@ def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_wei
     return K.mean(gradient_penalty)
 
 def label_loss(y_true, y_pred):
-    return tf.softmax_cross_entropy_with_logits(y_true, y_pred[1:])
+    return tf.losses.softmax_cross_entropy(y_true, y_pred[1:])
 
 
 def make_generator(dense = True, labels_size = 10):
