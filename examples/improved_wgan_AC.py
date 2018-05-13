@@ -359,6 +359,8 @@ generator_loss     = []
 
 for epoch in range(num_epochs):
     indices = np.arange(X_train.shape[0])
+    print(X_train.shape[0])
+    print(y_train.shape[0])
     np.random.shuffle(indices)
     X_train = X_train[indices]
     y_train = y_train[indices]
