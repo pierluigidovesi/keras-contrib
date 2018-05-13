@@ -20,6 +20,7 @@ import argparse
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 from tqdm import tqdm
 from keras.models import Model, Sequential
@@ -104,7 +105,7 @@ def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_wei
     return K.mean(gradient_penalty)
 
 def label_loss(y_true, y_pred):
-    return K.ops.nn.softmax_cross_entropy_with_logits(y_true, y_pred[1:])
+    return tf.softmax_cross_entropy_with_logits(y_true, y_pred[1:])
 
 
 def make_generator(dense = True, labels_size = 10):
