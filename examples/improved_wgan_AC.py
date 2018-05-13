@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from keras.models import Model, Sequential
-from keras.layers import Input, Dense, Reshape, Flatten
+from keras.layers import Input, Dense, Reshape, Flatten, Lambda
 from keras.layers.merge import _Merge
 from keras.layers.convolutional import Convolution2D, Conv2DTranspose
 from keras.layers.normalization import BatchNormalization
@@ -31,7 +31,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.optimizers import Adam
 from keras.datasets import mnist
 from keras import backend as K
-from keras import losses
+
 from functools import partial
 
 
@@ -281,8 +281,8 @@ generator_layers = generator(generator_input)
 discriminator_layers_for_generator = discriminator(generator_layers)
 
 generator_model = Model(inputs=[generator_input],
-                        outputs=[K.cast(discriminator_layers_for_generator[0],  dtype = 'float32'),
-                                 K.cast(discriminator_layers_for_generator[1:11], dtype = 'float32')])
+                        outputs=[Lambda(discriminator_layers_for_generator[0]),
+                                 Lambda(discriminator_layers_for_generator[1:])])
 # We use the Adam paramaters from Gulrajani et al.
 generator_model.compile(optimizer=Adam(0.0001, beta_1=0.5, beta_2=0.9), loss=[wasserstein_loss,
                                                                               label_loss])
@@ -327,11 +327,11 @@ partial_gp_loss.__name__ = 'gradient_penalty'  # Functions need names or Keras w
 # If we don't concatenate the real and generated samples, however, we get three outputs: One of the generated
 # samples, one of the real samples, and one of the averaged samples, all of size BATCH_SIZE. This works neatly!
 discriminator_model = Model(inputs=[real_samples, generator_input_for_discriminator],
-                            outputs=[discriminator_output_from_real_samples[0],
-                                     discriminator_output_from_generator[0],
+                            outputs=[Lambda(discriminator_output_from_real_samples[0]),
+                                     Lambda(discriminator_output_from_generator[0]),
                                      averaged_samples_out,
-                                     discriminator_output_from_real_samples[1:],
-                                     discriminator_output_from_generator[1:]])
+                                     Lambda(discriminator_output_from_real_samples[1:]),
+                                     Lambda(discriminator_output_from_generator[1:])])
 # We use the Adam paramaters from Gulrajani et al. We use the Wasserstein loss for both the real and generated
 # samples, and the gradient penalty loss for the averaged samples.
 discriminator_model.compile(optimizer=Adam(0.0001, beta_1=0.5, beta_2=0.9),
