@@ -289,8 +289,8 @@ generator_layers = generator(generator_input)
 discriminator_layers_for_generator = discriminator(generator_layers)
 
 generator_model = Model(inputs=[generator_input],
-                        outputs=[crop_lambda_truth(discriminator_layers_for_generator),
-                                 crop_lambda_label(discriminator_layers_for_generator)])
+                        outputs=[Lambda(lambda x: x[0])(discriminator_layers_for_generator),
+                                 Lambda(lambda x: x[1:])(discriminator_layers_for_generator)])
 # We use the Adam paramaters from Gulrajani et al.
 generator_model.compile(optimizer=Adam(0.0001, beta_1=0.5, beta_2=0.9), loss=[wasserstein_loss,
                                                                               label_loss])
