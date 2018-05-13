@@ -389,7 +389,7 @@ for epoch in range(num_epochs):
             labels_one_hot[np.arange(BATCH_SIZE), labels_batch] = 1
             # the noise is the generator input
             noise = np.random.rand(BATCH_SIZE, 100).astype(np.float32)
-            noise_with_labels = np.concatenate((noise, labels_one_hot), axis = 0)
+            noise_with_labels = np.concatenate((noise, labels_one_hot), axis = 1)
 
             disc_loss_j.append(np.asarray(discriminator_model.train_on_batch([image_batch, noise_with_labels],
                                                                              [negative_y,
@@ -397,7 +397,7 @@ for epoch in range(num_epochs):
                                                                               dummy_y,
                                                                               labels_one_hot,
                                                                               labels_one_hot])))
-        discriminator_loss.append(np.mean(disc_loss_j, axis=0))
+        discriminator_loss.append(np.mean(disc_loss_j, axis=1))
 
         noise_gen  = np.random.rand(BATCH_SIZE, 100)
 
