@@ -280,8 +280,9 @@ generator_input  = Input(shape = (110,))
 generator_layers = generator(generator_input)
 discriminator_layers_for_generator = discriminator(generator_layers)
 
-generator_model = Model(inputs=[generator_input], outputs=[discriminator_layers_for_generator[0],
-                                                           discriminator_layers_for_generator[1:]])
+generator_model = Model(inputs=[generator_input],
+                        outputs=[K.keras.backend.cast(discriminator_layers_for_generator[0]),
+                                 K.keras.backend.cast(discriminator_layers_for_generator[1:])])
 # We use the Adam paramaters from Gulrajani et al.
 generator_model.compile(optimizer=Adam(0.0001, beta_1=0.5, beta_2=0.9), loss=[wasserstein_loss,
                                                                               label_loss])
